@@ -8,7 +8,7 @@ describe('BBots', function () {
   before(async () => {
     signers = await ethers.getSigners();
     const Minter = await ethers.getContractFactory('BBots', signers[0]);
-    minter = await Minter.deploy(500);
+    minter = await Minter.deploy(signers[0].address);
     await minter.deployed();
   });
 
@@ -17,18 +17,10 @@ describe('BBots', function () {
     expect(totalSupply).to.be.eq(0);
   });
 
-  it('Should start the sale', async () => {
-    await minter.startSale();
-    const started = await minter.saleStatus();
-    expect(started).to.be.eq(true);
-  });
-
   it('Should mint some nfts', async () => {
-    await minter.connect(signers[1]).mintBbots(20, {
-      value: BigInt(20 * 0.05 * 1e18),
-    });
+    await minter.connect(signers[0]).mintBBots(5, signers[1].address);
     const balance = await minter.balanceOf(signers[1].address);
-    expect(balance).to.be.eq(20);
+    expect(balance).to.be.eq(5);
   });
 
   it('should transfer the nft', async () => {

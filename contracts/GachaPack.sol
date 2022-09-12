@@ -12,17 +12,27 @@ interface Collection is IERC721AQueryable {
 contract GachaPack is Ownable {
     uint256 constant MAX_SUPPLY = 3000;
 
+    uint256 remainingWLSales = 500;
+
+    uint256 constant PER_PACK = 5;
+
+    struct MintLog {
+        uint256[] nfts;
+        bool isNormalSaleOpened;
+        bool isWhiteListOpened;
+        uint256 mintedDate;
+    }
+
+    mapping( address => MintLog ) gachaMints;
     bytes32 whitelistRoot;
+    mapping(address => bool) public whiteListUsers;
 
-    uint256 constant MAX_MINT = 5;
-
-    mapping( address => uint256[] ) gachaMints;
 
     Collection nftCollection;
 
     uint256 public totalSupply = 0;
 
-    bool public isSaleOpen;
+    uint8 public saleStat = 0;
 
     event MintGacha(address minter, uint256[] nftIds);
 
@@ -34,29 +44,59 @@ contract GachaPack is Ownable {
         whitelistRoot = _merkleRoot;
     }
 
-    function startSale() external onlyOwner {
-        isSaleOpen = true;
+    function updateSaleStat(uint8 _saleStat) external onlyOwner {
+        saleStat = _saleStat;
     }
 
-    function stopSale() external onlyOwner {
-        isSaleOpen = false;
+    function addToWhitelist(address[] calldata _users) external onlyOwner {
+       for(uint256 i = 0; i<_users.length;i++) {
+           if(address(0) != _users[i]) {
+               whiteListUsers[_users[i]] = true;
+           }
+       }
     }
 
+    function openPackForWl( bytes32[] calldata wlProofs ) external {
+        require(saleStat == 1, "Not Opened");
+        require( PER_PACK <= remainingWLSales , "EXCEEDS_SUPPLY");
+        if( wlProofs.length == 0) {
+            require(whiteListUsers[msg.sender], "NOT_WHITELISTED");
+        }
+        else{
+            require(verifyWhitelist(msg.sender, wlProofs), "NOT_WHITELISTED");
+        }
+        MintLog storage mintLog = gachaMints[msg.sender];
+        require(!mintLog.isWhiteListOpened, "Already Opened");
 
-    function openPack( ) external {
-        require(isSaleOpen, "error");
-        require( totalSupply <= MAX_SUPPLY , "error");
-        require(gachaMints[msg.sender].length == 0, "Already Minted");
-        totalSupply += 5;
+        mintLog.isWhiteListOpened = true;
+        mintLog.mintedDate = block.timestamp;
+        totalSupply += PER_PACK;
 
-        nftCollection.mintBBots( MAX_MINT, msg.sender );
-        gachaMints[msg.sender] = nftCollection.tokensOfOwner(msg.sender);
+        nftCollection.mintBBots( PER_PACK, msg.sender );
+        mintLog.nfts = nftCollection.tokensOfOwner(msg.sender);
 
-        emit MintGacha( msg.sender, gachaMints[msg.sender] );
+        emit MintGacha( msg.sender, mintLog.nfts );
+    }
+
+    function openPack(  ) external {
+        require(saleStat == 2, "Not Opened");
+        require(totalSupply + PER_PACK <= MAX_SUPPLY - remainingWLSales, "EXCEEDS_SUPPLY");
+
+        MintLog storage mintLog = gachaMints[msg.sender];
+        require(!mintLog.isNormalSaleOpened, "Already Opened");
+
+        mintLog.isNormalSaleOpened = true;
+        mintLog.mintedDate = block.timestamp;
+        totalSupply += PER_PACK;
+
+        nftCollection.mintBBots( PER_PACK, msg.sender );
+        mintLog.nfts = nftCollection.tokensOfOwner(msg.sender);
+
+        emit MintGacha( msg.sender, mintLog.nfts );
     }
 
     function getMintedNft(address _minter) public view returns(uint256[] memory){
-        return gachaMints[_minter];
+        return gachaMints[_minter].nfts;
     }
 
     function verifyWhitelist(address user, bytes32[] calldata merkleProof) public view returns (bool) {

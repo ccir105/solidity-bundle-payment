@@ -22,7 +22,7 @@ contract BBots is ERC721AQueryable, AccessControl {
 
     }
 
-    function updateBaseUri(string memory baseURI) external onlyRole('DEFAULT_ADMIN_ROLE') {
+    function updateBaseUri(string memory baseURI) external onlyRole(DEFAULT_ADMIN_ROLE) {
         tokenBaseURI = baseURI;
     }
 
