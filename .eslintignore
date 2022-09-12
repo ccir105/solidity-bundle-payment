@@ -1,0 +1,16 @@
+# directories
+
+# files
+*.env
+*.log
+.solcover.js
+coverage.json
+npm-debug.log*
+
+node_modules
+artifacts
+cache
+coverage
+coverage-contracts
+coverage-src
+typechain-types

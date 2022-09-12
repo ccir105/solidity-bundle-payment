@@ -1,0 +1,49 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:14.17.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: CircleCI-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}
+      - run:
+          name: Install npm
+          command: 'sudo npm i -g npm'
+      - run:
+          name: Install Dependencies
+          command: 'yarn install'
+      - save_cache:
+          key: CircleCI-{{ arch }}-{{ .Branch }}-{{ checksum "package.json" }}
+          paths:
+            - 'node_modules'
+            - ~/.cache
+      - run:
+          name: Lint
+          command: "yarn lint"
+      - run:
+          name: Prettier Check
+          command: "yarn prettier:check"
+      - run:
+          name: Compile contracts
+          command: "npx hardhat compile"
+      - run:
+          name: Test Only
+          command: "yarn test:dotonly"
+      - run:
+          name: Test
+          command: "yarn test"
+      - run:
+          name: Coverage
+          command: "yarn coverage"
+      - run:
+          name: Send Report
+          command: |
+            bash <(curl -s https://codecov.io/bash)
+
+workflows:
+  version: 2.1
+  build_and_test:
+    jobs:
+      - build
