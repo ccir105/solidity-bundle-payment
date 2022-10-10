@@ -4,44 +4,33 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "erc721a/contracts/extensions/IERC721AQueryable.sol";
+import "./Bytes.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-interface Collection is IERC721AQueryable {
-    function mintBBots(uint256 _amt, address _to) external;
+interface Collection {
+    function mintFor(address _to, uint256 quantity, bytes memory mintingBlob) external;
+    function totalSupply() public view returns(uint256);
 }
 
-contract GachaPack is Ownable {
-    uint256 constant MAX_SUPPLY = 3000;
+contract BattlePass is ERC721, Ownable {
+    uint256 constant MAX_SUPPLY = 999;
+    uint256 TOTAL_WHITELIST = 100;
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
 
-    uint256 remainingWLSales = 500;
+    constructor() ERC721("BATTLE PASS", "BTL-PASS"){}
 
-    uint256 constant PER_PACK = 5;
-
-    struct MintLog {
-        uint256[] nfts;
-        bool isNormalSaleOpened;
-        bool isWhiteListOpened;
-        uint256 mintedDate;
-    }
-
-    mapping( address => MintLog ) gachaMints;
-    bytes32 whitelistRoot;
     mapping(address => bool) public whiteListUsers;
-
+    event AssetMinted(address indexed to, uint256 indexed tokenId, bytes blueprint);
 
     Collection nftCollection;
 
-    uint256 public totalSupply = 0;
-
     uint8 public saleStat = 0;
-
-    event MintGacha(address minter, uint256[] nftIds);
+    uint256 totalSupply = 0;
 
     function updateCollection(Collection _collection) external onlyOwner  {
         nftCollection = _collection;
-    }
-
-    function updateWhitelistRoot(bytes32 _merkleRoot) external onlyOwner {
-        whitelistRoot = _merkleRoot;
     }
 
     function updateSaleStat(uint8 _saleStat) external onlyOwner {
@@ -56,52 +45,66 @@ contract GachaPack is Ownable {
        }
     }
 
-    function openPackForWl( bytes32[] calldata wlProofs ) external {
-        require(saleStat == 1, "Not Opened");
-        require( PER_PACK <= remainingWLSales , "EXCEEDS_SUPPLY");
-        if( wlProofs.length == 0) {
+    function mintFor( address to, uint256 quantity, bytes memory mintingBlob  ) external {
+
+        require( totalSupply <= MAX_SUPPLY, "SUPPLY_EXCEEDS" );
+
+        //whitelist check
+        if( saleStat == 1 ) {
             require(whiteListUsers[msg.sender], "NOT_WHITELISTED");
+            require( TOTAL_WHITELIST > 0 , "EXCEEDS_SUPPLY");
+            TOTAL_WHITELIST = TOTAL_WHITELIST - 1;
         }
-        else{
-            require(verifyWhitelist(msg.sender, wlProofs), "NOT_WHITELISTED");
+
+        //minting battle pass to user
+        uint256 _tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+
+        totalSupply += 1;
+
+        _safeMint(to, _tokenId);
+
+        emit AssetMinted(to, _tokenId, mintingBlob);
+
+        (uint256 tokenId, string memory ipfsHash, bytes memory tokenSeed ) = parseBlob(mintingBlob);
+
+        if( checkIfUserHasChance(tokenSeed) == true && nftCollection.totalSupply() < 333) {
+
+            nftCollection.mintBBots(tokenId, msg.sender, ipfsHash);
         }
-        MintLog storage mintLog = gachaMints[msg.sender];
-        require(!mintLog.isWhiteListOpened, "Already Opened");
-
-        mintLog.isWhiteListOpened = true;
-        mintLog.mintedDate = block.timestamp;
-        totalSupply += PER_PACK;
-
-        nftCollection.mintBBots( PER_PACK, msg.sender );
-        mintLog.nfts = nftCollection.tokensOfOwner(msg.sender);
-
-        emit MintGacha( msg.sender, mintLog.nfts );
     }
 
-    function openPack(  ) external {
-        require(saleStat == 2, "Not Opened");
-        require(totalSupply + PER_PACK <= MAX_SUPPLY - remainingWLSales, "EXCEEDS_SUPPLY");
+    function parseBlob(bytes calldata blob) internal returns(uint256, string memory, string memory)
+    {
+        int256 colonIndex = Bytes.indexOf(blob, ":", 0);
 
-        MintLog storage mintLog = gachaMints[msg.sender];
-        require(!mintLog.isNormalSaleOpened, "Already Opened");
+        require(colonIndex >= 0, "Separator must exist");
 
-        mintLog.isNormalSaleOpened = true;
-        mintLog.mintedDate = block.timestamp;
-        totalSupply += PER_PACK;
+        uint256 tokenID = Bytes.toUint(blob[1:uint256(colonIndex) - 1]);
 
-        nftCollection.mintBBots( PER_PACK, msg.sender );
-        mintLog.nfts = nftCollection.tokensOfOwner(msg.sender);
+        bytes calldata blueprint = blob[uint256(colonIndex) + 2:blob.length - 1];
 
-        emit MintGacha( msg.sender, mintLog.nfts );
+        int256 commaIndex = Bytes.indexOf(blueprint, ",", 0);
+
+        require(commaIndex >= 0, "Separator must exist");
+
+        bytes memory ipfsHash = blueprint[0:uint256(commaIndex)];
+
+        //random number generated from javascript
+        bytes memory tokenSeed = blueprint[uint256(commaIndex) + 1:blueprint.length];
+
+        return (tokenID, string(ipfsHash), tokenSeed);
     }
 
-    function getMintedNft(address _minter) public view returns(uint256[] memory){
-        return gachaMints[_minter].nfts;
-    }
+    function checkIfUserHasChance(bytes memory seed) public view returns(bool)
+    {
+        uint256 randomNumber = uint256(keccak256(abi.encode("BBOTS_NFT", seed, block.timestamp))) % 1500;
 
-    function verifyWhitelist(address user, bytes32[] calldata merkleProof) public view returns (bool) {
-        bytes32 node = keccak256(abi.encodePacked(user));
+        if (randomNumber % 3 == 0)
+        {
+            return true;
+        }
 
-        return MerkleProof.verify(merkleProof, whitelistRoot, node);
+        return false;
     }
 }
