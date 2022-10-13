@@ -23,15 +23,12 @@ contract OtherWay is Ownable {
 
     IERC721 ForTheBuilders;
 
-    address signer;
-
     mapping(address => uint256) mintParticipator;
 
     uint256 saleStat = 0;
 
-    constructor(IERC721 _forTheBuilders, address _signer) {
+    constructor(IERC721 _forTheBuilders) {
         ForTheBuilders = _forTheBuilders;
-        signer = _signer;
     }
 
     function isOurMinter(address _user) public view returns (bool) {
