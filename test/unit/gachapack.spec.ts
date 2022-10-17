@@ -1,46 +1,58 @@
 import {expect} from 'chai';
-import {ethers} from 'hardhat';
+import {ethers, web3} from 'hardhat';
 
-describe('GachaPack', function () {
-    let collection;
+describe('BBots', function () {
+    let bubbleBot;
     let signers;
-    let gachaPack;
+    // let minterProxy;
 
     before(async () => {
         signers = await ethers.getSigners();
-        const GachaPack = await ethers.getContractFactory('GachaPack', signers[0]);
+        const BubbleBot = await ethers.getContractFactory('BattlePass', signers[0]);
 
-        gachaPack = await GachaPack.deploy();
-        await gachaPack.deployed();
+        // const MinterProxy = await ethers.getContractFactory('MinterProxy', signers[0]);
+        // minterProxy = await MinterProxy.deploy();
 
-        const Collection = await ethers.getContractFactory('BBots', signers[0]);
-        collection = await Collection.deploy(gachaPack.address);
-        await collection.deployed();
+        // await minterProxy.deployed();
+
+        bubbleBot = await BubbleBot.deploy(100, signers[0].address, signers[1].address);
+
+        await bubbleBot.deployed();
     });
 
-    it('should update the collection address', async () => {
-        await gachaPack.updateCollection(collection.address);
+    it('should get the total supply', async () => {
+        const supply = await bubbleBot.totalSupply();
+        expect(supply).to.be.eq(0);
     });
 
-    it('Should add to whitelist', async () => {
-       let users: any = [];
-       for(let i = 0; i<10;i++) {
-           users.push(
-               signers[i + 1].address
-           )
-       }
-       await gachaPack.addToWhitelist(users);
-       const isAdded = await gachaPack.whiteListUsers(users[1]);
-       expect(isAdded).to.be.eq(true);
+    it('Should mint some nfts', async () => {
+        for (let i = 0; i < 100; i++) {
+            await bubbleBot
+                .connect(signers[0])
+                .mintFor(signers[1].address, 1, web3.utils.asciiToHex(`{${i}}:{IPFSHASH${i},12.23.34.45}`));
+        }
+
+        const balance = await bubbleBot.balanceOf(signers[1].address);
+        expect(balance).to.be.eq(100);
     });
 
-    it('Should start the whitelist sale', async () => {
-        await gachaPack.updateSaleStat(1);
-        const saleStat = await gachaPack.saleStat();
-        expect(saleStat).to.be.eq(1);
+    it('should transfer the nft', async () => {
+        await bubbleBot.connect(signers[1]).transferFrom(signers[1].address, signers[0].address, 1);
+        let isOwner = await bubbleBot.ownerOf(1);
+        expect(isOwner).to.be.eql(signers[0].address);
     });
 
-    it('should mint for whitelist', async () => {
-        await gachaPack.connect(signers[2]).openPackForWl([]);
+    it('should approve', async () => {
+        await bubbleBot.connect(signers[1]).approve(signers[3].address, 2);
+    });
+
+    it('Should approve all', async () => {
+        await bubbleBot.setApprovalForAll(signers[1].address, true);
+    });
+
+    it('Should return the proper base uri', async () => {
+        await bubbleBot.updateBaseUri('https://dev.peanuthub.com/nft/');
+        const tokenUri = await bubbleBot.tokenURI(1);
+        expect(tokenUri).to.be.eq('https://dev.peanuthub.com/nft/1');
     });
 });

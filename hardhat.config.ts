@@ -9,7 +9,7 @@ import accounts from './test/mock/accounts.json';
 import initTask from './tasks/minter';
 import '@openzeppelin/hardhat-upgrades';
 require('dotenv').config();
-// initTask(task);
+initTask(task);
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more

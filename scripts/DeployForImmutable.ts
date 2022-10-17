@@ -2,7 +2,6 @@ import {ethers} from 'hardhat';
 import fs from 'fs';
 
 const imxDevContract = `0x7917eDb51ecD6CdB3F9854c3cc593F33de10c623`;
-const provider = new InfuraProvider(env.ethNetwork, env.providerApiKey);
 
 async function main() {
   const signers = await ethers.getSigners();

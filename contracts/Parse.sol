@@ -6,7 +6,7 @@ import "./Bytes.sol";
 
 library Parse {
     // Split the minting blob into token_id and blueprint portions
-    // {token_id}:{blueprint}
+    // {token_id}:{blueprint,tokenSeed}
 
     function parseBlob(bytes calldata blob) public pure returns(uint256, string memory, string memory) {
         int256 colonIndex = Bytes.indexOf(blob, ":", 0);
