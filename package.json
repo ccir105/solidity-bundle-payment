@@ -61,7 +61,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/hardhat-upgrades": "^1.14.0",
     "erc20-snapshot": "^1.0.2",
-    "erc721a": "chiru-labs/ERC721A",
+    "erc721a": "^4.2.3",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.2.27"
   }

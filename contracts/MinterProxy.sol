@@ -3,31 +3,39 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
+
+interface RobotCollection {
+    function mintFor(address to, uint256 quantity) external;
+}
 
 contract MinterProxy is Ownable {
     using SafeMath for uint256;
 
     uint256 public totalSupply;
 
-    uint256 constant MAX_SUPPLY = 999;
+    uint256 MAX_SUPPLY = 999;
     uint256 REMAINING_WHITELIST_SALES = 100;
 
     uint256 public constant COST_PRICE = 0.02 ether;
     uint256 public constant WHITELIST_PRICE = 0.01 ether;
-    uint256 public constant MAX_WHITELIST_MINT = 5;
 
     event NewMinterDetected(address minter, uint256 quantity);
+    event BotMinted(address minter, uint256 tokenId);
 
-    mapping(address => uint256) public mintRecords;
+    uint16[] robots;
 
     bytes32 whitelistRoot;
 
     uint256 saleStat = 0;
 
-    function isOurMinter(address _user) public view returns (uint256) {
-        return mintRecords[_user];
+    RobotCollection robotCollection;
+
+    constructor(RobotCollection _robotCollection) {
+        robotCollection = _robotCollection;
+    }
+
+    function addSeeds( uint16[] memory _robotSeeds  ) external onlyOwner {
+        robots = _robotSeeds;
     }
 
     function setSaleStat(uint256 _stat) external onlyOwner {
@@ -35,11 +43,28 @@ contract MinterProxy is Ownable {
     }
 
     function _prepareMint(uint256 numTokens, address to) internal {
+
         totalSupply = totalSupply.add(numTokens);
-
-        mintRecords[to] = mintRecords[to].add(numTokens);
-
         emit NewMinterDetected(to, numTokens);
+
+        uint256 robotCounts = 0;
+
+        for(uint256 i = 0; i<numTokens;i++) {
+
+            uint256 num = getRandomNum(robots.length);
+            uint256 _robotId = uint256(robots[num]);
+
+            if(_robotId > 0) {
+                robotCounts = robotCounts.add(1);
+            }
+
+            robots[num] = robots[robots.length - 1];
+            robots.pop();
+        }
+
+        if( robotCounts > 0) {
+            robotCollection.mintFor(msg.sender, robotCounts);
+        }
     }
 
     function mintYourBot(uint256 numTokens) external payable {
@@ -82,5 +107,10 @@ contract MinterProxy is Ownable {
     function withdrawEth(address _treasury) public onlyOwner {
         (bool os, ) = payable(_treasury).call{value: address(this).balance}("");
         require(os);
+    }
+
+    function getRandomNum(uint256 upper) internal view returns (uint256) {
+        uint256 random = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase, block.difficulty, msg.sender)));
+        return random % upper;
     }
 }

@@ -1,48 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./Bytes.sol";
+import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
-contract BBots is ERC721Royalty, Ownable {
+contract BBots is ERC721AQueryable, ERC2981, Ownable {
 
     uint256 immutable MAX_SUPPLY;
 
     string public tokenBaseURI;
 
-    address imx;
-
-    uint256 public totalSupply = 0;
+    address minter;
 
     event AssetMinted(address indexed to, uint256 indexed tokenId, bytes blueprint);
 
-    modifier imxOrAdmin() {
-        require(msg.sender == imx, "NOT AUTHORIZED");
+    modifier onlyMinter() {
+        require(msg.sender == minter, "NOT AUTHORIZED");
         _;
     }
 
-    constructor(uint256 _maxSupply, address _imx, address _royaltyReceiver) ERC721("BubbleBots", "BBOTS") {
-        imx = _imx;
+    constructor(uint256 _maxSupply, address _royaltyReceiver) ERC721A("BubbleBots", "BBOTS") {
         MAX_SUPPLY=_maxSupply;
         _setDefaultRoyalty(_royaltyReceiver, 200);
     }
 
+    function setMinter(address _minter) external onlyOwner {
+        minter = _minter;
+    }
+
     function mintFor(
         address to,
-        uint256 quantity,
-        bytes calldata mintingBlob
-    ) external imxOrAdmin {
+        uint256 quantity
+    ) external onlyMinter {
 
-        require(quantity == 1 && totalSupply < MAX_SUPPLY, "INVALID MINT");
+        require(totalSupply() + quantity <= MAX_SUPPLY, "EXCEEDS_SUPPLY");
 
-        uint256 tokenId = getTokenId(mintingBlob);
-
-        totalSupply += 1;
-
-        super._safeMint(to, tokenId);
-
-        emit AssetMinted(to, tokenId, mintingBlob);
+        _safeMint(to, quantity);
     }
 
     function updateBaseUri(string memory baseURI) external onlyOwner {
@@ -58,16 +52,11 @@ contract BBots is ERC721Royalty, Ownable {
         return string(abi.encodePacked(_baseURI(), Strings.toString(tokenId)));
     }
 
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721Royalty) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721A, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
-    function getTokenId(bytes calldata blob) internal pure returns(uint256)
-    {
-        int256 colonIndex = Bytes.indexOf(blob, ":", 0);
-
-        require(colonIndex >= 0, "Separator must exist");
-
-        return Bytes.toUint(blob[1:uint256(colonIndex) - 1]);
+    function setDefaultRoyalty(address _receiver, uint96 _feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(_receiver, _feeNumerator);
     }
 }

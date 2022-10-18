@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {ethers, web3} from 'hardhat';
 
-describe('BBots', function () {
+describe('BattlePass', function () {
     let bubbleBot;
     let signers;
     // let minterProxy;
@@ -9,11 +9,6 @@ describe('BBots', function () {
     before(async () => {
         signers = await ethers.getSigners();
         const BubbleBot = await ethers.getContractFactory('BattlePass', signers[0]);
-
-        // const MinterProxy = await ethers.getContractFactory('MinterProxy', signers[0]);
-        // minterProxy = await MinterProxy.deploy();
-
-        // await minterProxy.deployed();
 
         bubbleBot = await BubbleBot.deploy(100, signers[0].address, signers[1].address);
 
