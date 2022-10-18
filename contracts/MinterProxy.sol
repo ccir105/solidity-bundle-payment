@@ -63,7 +63,7 @@ contract MinterProxy is Ownable {
         }
 
         if( robotCounts > 0) {
-            robotCollection.mintFor(msg.sender, robotCounts);
+            robotCollection.mintFor(to, robotCounts);
         }
     }
 
