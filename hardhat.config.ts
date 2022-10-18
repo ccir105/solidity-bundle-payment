@@ -34,7 +34,7 @@ const config: HardhatUserConfig | any = {
       gasMultiplier: 1,
     },
     hardhat: {
-      gas: 25e6
+      gas: 25e6,
     },
     live: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA}`,
@@ -47,8 +47,8 @@ const config: HardhatUserConfig | any = {
       accounts: accounts.privateKey,
     },
     testnet: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA}`,
-      chainId: 4,
+      url: `https://goerli.infura.io/v3/${process.env.INFURA}`,
+      chainId: 5,
       accounts: accounts.privateKey,
       gasMultiplier: 2,
     },

@@ -1,24 +1,26 @@
-import {ethers,hardhatArguments} from 'hardhat';
+import {ethers} from 'hardhat';
 import fs from 'fs';
-import {getIMXAddress} from './utils'
+
+const imxDevContract = `0x7917eDb51ecD6CdB3F9854c3cc593F33de10c623`;
 
 async function main() {
-    const signers = await ethers.getSigners();
-    const Minter = await ethers.getContractFactory('Test');
-    const minter = await Minter.deploy();
-    await minter.deployed();
+  const signers = await ethers.getSigners();
+  const Minter = await ethers.getContractFactory('BBots');
+  const minter = await Minter.deploy(imxDevContract, signers[1].address); //royalty
 
-    console.log('Deployed to:', minter.address, signers[0].address);
+  await minter.deployed();
 
-    fs.writeFileSync(
-        './tasks/address.json',
-        JSON.stringify({
-            genesis: minter.address,
-        }),
-    );
+  console.log('Deployed to:', minter.address, signers[0].address, signers[1].address);
+
+  fs.writeFileSync(
+    './tasks/address.json',
+    JSON.stringify({
+      genesis: minter.address,
+    }),
+  );
 }
 
 main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+  console.error(error);
+  process.exitCode = 1;
 });

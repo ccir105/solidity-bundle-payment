@@ -8,19 +8,19 @@ async function showTxStatus(tx: any, hre: any) {
 }
 
 async function getMinter(hre) {
-  return await hre.ethers.getContractAt('BubbleBots', addresses.minter);
+  return await hre.ethers.getContractAt('BBots', addresses.genesis);
 }
 
 export default function initTask(task: any) {
-  task('pause', 'Pause all transfers ').setAction(async (taskArgs: any, hre: any) => {
+  task('stop-sale', 'Pause all transfers ').setAction(async (taskArgs: any, hre: any) => {
     let minter = await getMinter(hre);
-    var tx = await minter.pause();
+    var tx = await minter.updateSaleState(0);
     await showTxStatus(tx, hre);
   });
 
-  task('unpause', 'UnPause all transfers ').setAction(async (taskArgs: any, hre: any) => {
+  task('start-sale', 'UnPause all transfers ').setAction(async (taskArgs: any, hre: any) => {
     let minter = await getMinter(hre);
-    var tx = await minter.unpause();
+    var tx = await minter.updateSaleState(1);
     await showTxStatus(tx, hre);
   });
 

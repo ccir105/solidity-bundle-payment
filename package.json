@@ -13,8 +13,8 @@
     "chain": "npx hardhat node",
     "deploy": "npx hardhat run --network localhost scripts/deployMinter.ts",
     "giveaway": "npx hardhat --network localhost giveaway",
-    "deploy:testnet": "npx hardhat run --network testnet scripts/deployMinter.ts",
-    "verify:testnet": "npx hardhat verify --network testnet 0x2Bd4396C0b4836666B7a50D8d3F6feDC73a04BC9",
+    "deploy:testnet": "npx hardhat run --network testnet scripts/DeployForImmutable.ts",
+    "verify:testnet": "npx hardhat verify --network testnet --constructor-args args.js 0xC122e33187652Ae42e1781343909ECA697a280A1",
     "deploy:mainnet": "npx hardhat run --network mainnet scripts/deployMinter.ts",
     "verify:mainnet": "npx hardhat verify --network mainnet --constructor-args args.js 0x2A644467FfD0BAfd597fE00711EDD074C1097305",
     "prettier:fix": "npx prettier --write 'contracts/IDGAF.sol'",
@@ -61,7 +61,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.2",
     "@openzeppelin/hardhat-upgrades": "^1.14.0",
     "erc20-snapshot": "^1.0.2",
-    "erc721a": "chiru-labs/ERC721A",
+    "erc721a": "^4.2.3",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.2.27"
   }
