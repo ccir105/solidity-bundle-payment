@@ -77,61 +77,52 @@ describe('MinterProxy', function () {
 
       await minterProxy.setSaleStat(1);
 
-      const mintTx = await minterProxy.connect(signers[1]).mintForWhitelist(
-          4,
+      await minterProxy.connect(signers[1]).mintForWhitelist(
+          1,
           whitelistTree.tree.getHexProof(web3.utils.sha3(signers[1].address)),
           {
-            value: BigInt(0.01 * 4 * 1e18),
+            value: BigInt(0.01 * 1e18),
           }
       );
 
-      const result = await mintTx.wait();
-
-      const botMinted = result.events.filter(ev => ev.topics[0] == transferSig);
-
-      if(botMinted.length) {
-        console.log(`Bot Minted`, botMinted.length)
-      }
-
-      totalBotMints += botMinted.length;
-
-      expect(await minterProxy.totalSupply()).to.be.eq(4);
+      expect(await minterProxy.totalSupply()).to.be.eq(1);
 
       await minterProxy.setSaleStat(0);
 
       await expect(minterProxy.connect(signers[1]).mintForWhitelist(
-          5,
+          1,
           whitelistTree.tree.getHexProof(web3.utils.sha3(signers[1].address)),
           {
-            value: BigInt(0.01 * 5 * 1e18),
+            value: BigInt(0.01 * 1e18),
           }
       )).to.be.revertedWith('WHITELIST_NOT_STARTED');
 
     });
 
-    it('should mint as normal user', async () => {
+    it('should test massive mint as normal user', async () => {
       await minterProxy.setSaleStat(2);
 
-      for(let i = 0; i < 199; i++) {
-        const mintTx = await minterProxy.connect(signers[9]).mintYourBot(
-            5,
+      //as 1 nft is minted when whitelist sale was opened
+      for(let i = 0; i < 998; i++) {
+
+        let _signer = signers[ Math.floor(Math.random() * signers.length) ];
+
+        await minterProxy.connect(_signer).mintYourBot(
+            1,
             {
-              value: BigInt(0.02 * 5 * 1e18),
+              value: BigInt(0.02 * 1e18),
             }
         );
-
-        const result = await mintTx.wait();
-
-        const botMinted = result.events.filter(ev => ev.topics[0] == transferSig);
-
-        if(botMinted.length) {
-          console.log(i, `Bot Minted`, botMinted.length)
-        }
-
-        totalBotMints += botMinted.length;
       }
 
-      console.log("Out of total 999" ,totalBotMints, "Minted");
+      await expect(minterProxy.connect(signers[1]).mintYourBot(
+          1,
+          {
+            value: BigInt(0.01 * 1e18),
+          }
+      )).to.be.revertedWith('EXCEEDS_MAX_SUPPLY');
+
+      expect(await bubbleBot.totalSupply()).to.be.eq(333);
 
     })
 
