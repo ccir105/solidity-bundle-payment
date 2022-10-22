@@ -14,24 +14,31 @@ contract MinterProxy is Ownable {
     uint256 public totalSupply;
 
     uint256 MAX_SUPPLY = 999;
-    uint256 REMAINING_WHITELIST_SALES = 100;
+    uint256 public REMAINING_WHITELIST_SALES = 100;
 
-    uint256 public constant COST_PRICE = 0.02 ether;
-    uint256 public constant WHITELIST_PRICE = 0.01 ether;
+    uint256 public immutable COST_PRICE;
+    uint256 public immutable WHITELIST_PRICE;
 
-    event NewMinterDetected(address minter, uint256 quantity);
-    event BotMinted(address minter, uint256 tokenId);
+    event NewMinterDetected(address indexed minter, uint256 quantity, uint256[] mintPassIds);
 
     uint16[] robots;
 
+    uint16 nonce = 333;
+
     bytes32 whitelistRoot;
 
-    uint256 saleStat = 0;
+    uint256 public saleStat = 0;
 
     RobotCollection robotCollection;
 
-    constructor(RobotCollection _robotCollection) {
+    constructor(
+        RobotCollection _robotCollection,
+        uint256 _costPrice,
+        uint256 _whitelistPrice
+    ) {
         robotCollection = _robotCollection;
+        COST_PRICE = _costPrice;
+        WHITELIST_PRICE = _whitelistPrice;
     }
 
     function addSeeds( uint16[] memory _robotSeeds  ) external onlyOwner {
@@ -42,29 +49,42 @@ contract MinterProxy is Ownable {
         saleStat = _stat;
     }
 
+    //should
+
+    function getRandomNum(uint256 upper) internal view returns (uint256) {
+        uint256 random = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase, block.difficulty, msg.sender, upper, nonce)));
+        return random % upper;
+    }
+
     function _prepareMint(uint256 numTokens, address to) internal {
 
         totalSupply = totalSupply.add(numTokens);
-        emit NewMinterDetected(to, numTokens);
 
         uint256 robotCounts = 0;
 
-        for(uint256 i = 0; i<numTokens;i++) {
+        uint256[] memory mintPassIds = new uint256[](numTokens);
+
+        for(uint256 i = 0; i< numTokens; i++ ) {
 
             uint256 num = getRandomNum(robots.length);
             uint256 _robotId = uint256(robots[num]);
 
-            if(_robotId > 0) {
+            if(_robotId > 0 && _robotId <= 333) {
+                nonce = uint16(_robotId);
                 robotCounts = robotCounts.add(1);
             }
 
             robots[num] = robots[robots.length - 1];
             robots.pop();
+
+            mintPassIds[i] = _robotId;
         }
 
         if( robotCounts > 0) {
             robotCollection.mintFor(to, robotCounts);
         }
+
+        emit NewMinterDetected(to, numTokens, mintPassIds);
     }
 
     function mintYourBot(uint256 numTokens) external payable {
@@ -107,10 +127,5 @@ contract MinterProxy is Ownable {
     function withdrawEth(address _treasury) public onlyOwner {
         (bool os, ) = payable(_treasury).call{value: address(this).balance}("");
         require(os);
-    }
-
-    function getRandomNum(uint256 upper) internal view returns (uint256) {
-        uint256 random = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.coinbase, block.difficulty, msg.sender)));
-        return random % upper;
     }
 }

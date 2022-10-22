@@ -49,8 +49,7 @@ const config: HardhatUserConfig | any = {
     testnet: {
       url: `https://goerli.infura.io/v3/${process.env.INFURA}`,
       chainId: 5,
-      accounts: accounts.privateKey,
-      gasMultiplier: 2,
+      accounts: accounts.privateKey
     },
   },
   gasReporter: {

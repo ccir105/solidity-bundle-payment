@@ -22,7 +22,8 @@
     "issues": "slither . --solc-disable-warnings 2>&1",
     "deploy:mumbai": "npx hardhat run --network mumbai scripts/deployMinter.ts",
     "verify:mumbai": "npx hardhat verify --network mumbai --constructor-args args.js 0xF9fBC4cD1B411F641A9Ec83137bfaE0aCBB4D8Fd",
-    "mumbai": "npx hardhat --network mumbai"
+    "testnet": "npx hardhat --network testnet",
+    "balance:testnet": "npx hardhat --network testnet balance"
   },
   "author": "IDGAF Dev Team",
   "license": "ISC",
