@@ -1,7 +1,8 @@
 import addresses from './address.json';
 import {ethers} from "ethers";
 import fs from "fs";
-
+import readXlsxFile from "read-excel-file/node";
+import writeXlsxFile from "write-excel-file/node";
 import {MerkleTree} from 'merkletreejs';
 
 export async function showTxStatus(tx: any) {
@@ -41,13 +42,13 @@ export default function initTask(task: any) {
 
   task('start-public', 'Start The public sale').setAction(async (taskArgs: any, hre: any) => {
     let minter = await getMinter(hre);
-    let tx = await minter.updateSaleState(2);
+    let tx = await minter.setSaleStat(2);
     await showTxStatus(tx);
   });
 
   task('sale-stop', 'stop all the sale').setAction(async (taskArgs: any, hre: any) => {
     let minter = await getMinter(hre);
-      let tx = await minter.updateSaleState(0);
+      let tx = await minter.setSaleStat(0);
     await showTxStatus(tx);
   });
 
@@ -123,9 +124,37 @@ export default function initTask(task: any) {
 
   task('test', 'Add Random Scripts')
       .setAction(async (arg: any, hre: any) => {
+          let benExcel = await readXlsxFile('./tasks/wl.xlsx');
+          benExcel.shift()
+          const fthContact = await hre.ethers.getContractAt('BBots', "0xde57e569c89194aaf25a36a61c8f1cf3be0f0262");
+          const parsedData = benExcel.map(rows => rows[0])
 
-          const accounts = (await hre.ethers.getSigners()).map(acc => acc.address);
-          fs.writeFileSync('./tasks/whitelist.json', JSON.stringify(accounts));
+          const ftbBalanceSchema = [
+              {
+                  column: "Address",
+                  type: String,
+                  value: (nft) => nft.address,
+              },
+              {
+                  column: "Balance",
+                  type: Number,
+                  value: (nft) => nft.balance,
+              },
+          ]
 
+          const list: any = []
+
+          for(let i = 0; i < parsedData.length; i++) {
+           const balance = await fthContact.balanceOf(parsedData[i]);
+           list.push({
+               address: parsedData[i],
+               balance: balance.toNumber()
+           })
+          }
+
+          await writeXlsxFile(list, {
+              schema: ftbBalanceSchema,
+              filePath: "./tasks/wlBalance.xlsx",
+          });
       });
 }
