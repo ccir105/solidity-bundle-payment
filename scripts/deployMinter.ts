@@ -1,18 +1,26 @@
 import {ethers} from 'hardhat';
 import fs from 'fs';
 async function main() {
+
   const signers = await ethers.getSigners();
-  const Minter = await ethers.getContractFactory('BubbleBots');
-  const minter = await Minter.deploy(500);
 
-  await minter.deployed();
+  const BubbleSale = await ethers.getContractFactory('Bubbles');
+  const TestToken = await ethers.getContractFactory('MyToken');
 
-  console.log('Box deployed to:', minter.address, signers[0].address);
+  const testToken = await TestToken.deploy();
+  await testToken.deployed();
+
+  const bubbleSale = await BubbleSale.deploy(signers[0].address, testToken.address);
+  await bubbleSale.deployed();
+
+  console.log('Bubble Sale deployed to:', bubbleSale.address);
+  console.log('Test Token Deployed to:', testToken.address)
 
   fs.writeFileSync(
     './tasks/address.json',
     JSON.stringify({
-      minter: minter.address,
+      bubbleSale: bubbleSale.address,
+      testToken: testToken.address,
     }),
   );
 }

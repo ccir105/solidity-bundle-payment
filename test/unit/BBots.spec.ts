@@ -1,55 +1,40 @@
 import {expect} from 'chai';
 import {ethers} from 'hardhat';
 
-describe('BBots', function () {
-  let minter;
+
+describe('Contract Bubbles', function () {
+  let seller;
   let signers;
+  let testToken;
 
   before(async () => {
     signers = await ethers.getSigners();
-    const Minter = await ethers.getContractFactory('BBots', signers[0]);
-    minter = await Minter.deploy(500);
-    await minter.deployed();
+    const BubbleSale = await ethers.getContractFactory('Bubbles', signers[0]);
+    const TestToken = await ethers.getContractFactory('MyToken');
+    testToken = await TestToken.deploy();
+    seller = await BubbleSale.deploy(signers[0].address, testToken.address);
+    await seller.deployed();
   });
 
-  it('Should have the total nft supply', async () => {
-    var totalSupply = await minter.totalSupply();
-    expect(totalSupply).to.be.eq(0);
+  it('Should purchase bubbles', async () => {
+    await testToken.transfer(signers[1].address, BigInt(100e6));
+    await testToken.connect(signers[1]).approve(seller.address, BigInt(10e6));
+    const tx = await seller.connect(signers[1]).purchaseBubblesByUSD(BigInt(10e6));
+    const receipt = await tx.wait();
+    expect(receipt.events[2].event).to.be.eq('BubbleBotPurchased');
+    expect(receipt.events[2].args[0]).to.be.eq(signers[1].address);
+    expect(receipt.events[2].args[1].toString()).to.be.eq(BigInt(10e6).toString());
+    expect(receipt.events[2].args[2]).to.be.eq(true);
   });
 
-  it('Should start the sale', async () => {
-    await minter.startSale();
-    const started = await minter.saleStatus();
-    expect(started).to.be.eq(true);
-  });
-
-  it('Should mint some nfts', async () => {
-    await minter.connect(signers[1]).mintBbots(20, {
-      value: BigInt(20 * 0.05 * 1e18),
+  it('should purchase bubbles by matic', async () => {
+    const tx = await seller.connect(signers[1]).purchaseBubblesWithMatic(BigInt(1 * 1e18), {
+      value: BigInt(1 * 1e18)
     });
-    const balance = await minter.balanceOf(signers[1].address);
-    expect(balance).to.be.eq(20);
-  });
-
-  it('should transfer the nft', async () => {
-    let myTokens = await minter.tokensOfOwner(signers[1].address);
-    await minter.connect(signers[1]).transferFrom(signers[1].address, signers[0].address, myTokens[0].toNumber());
-    let isOwner = await minter.ownerOf(myTokens[0].toNumber());
-    expect(isOwner).to.be.eql(signers[0].address);
-  });
-
-  it('should approve', async () => {
-    let myTokens = await minter.tokensOfOwner(signers[1].address);
-    await minter.connect(signers[1]).approve(signers[3].address, myTokens[1].toString());
-  });
-
-  it('Should approve all', async () => {
-    await minter.setApprovalForAll(signers[1].address, true);
-  });
-
-  it('Should return the proper base uri', async () => {
-    await minter.updateBaseUri('https://dev.peanuthub.com/nft/');
-    const tokenUri = await minter.tokenURI(1);
-    expect(tokenUri).to.be.eq('https://dev.peanuthub.com/nft/1.json');
+    const receipt = await tx.wait();
+    expect(receipt.events[0].event).to.be.eq('BubbleBotPurchased');
+    expect(receipt.events[0].args[0]).to.be.eq(signers[1].address);
+    expect(receipt.events[0].args[1].toString()).to.be.eq(BigInt(1 * 1e18).toString());
+    expect(receipt.events[0].args[2]).to.be.eq(false);
   });
 });

@@ -6,7 +6,7 @@ import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 import '@nomiclabs/hardhat-web3';
 import accounts from './test/mock/accounts.json';
-import initTask from './tasks/minter';
+import initTask from './tasks/bubbleSale';
 import '@openzeppelin/hardhat-upgrades';
 require('dotenv').config();
 initTask(task);
@@ -37,20 +37,14 @@ const config: HardhatUserConfig | any = {
       gas: 25e6
     },
     live: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA}`,
-      chainId: 1,
+      url: `https://polygon-rpc.com`,
+      chainId: 137,
       accounts: accounts.privateKey,
     },
     mumbai: {
       url: `https://rpc-mumbai.maticvigil.com`,
       chainId: 80001,
       accounts: accounts.privateKey,
-    },
-    testnet: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA}`,
-      chainId: 4,
-      accounts: accounts.privateKey,
-      gasMultiplier: 2,
     },
   },
   gasReporter: {

@@ -1,8 +1,9 @@
+// @ts-ignore
 import addresses from './address.json';
 var keccak256 = require('keccak256');
 
 async function showTxStatus(tx: any, hre: any) {
-  console.log('[Transaion]', tx.hash);
+  console.log('[Transaction]', tx.hash);
   let receipt = await tx.wait();
   console.log(`[Cost] ${hre.ethers.utils.formatEther(tx.gasPrice * receipt.gasUsed)} ETH`);
 }
