@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
 
 contract Bubbles is Pausable, Ownable {
 
@@ -56,6 +55,10 @@ contract Bubbles is Pausable, Ownable {
         }
 
         bundles[id] = _toSaveBundle;
+    }
+
+    function deleteBundle(uint256 id) external onlyOwner {
+        delete bundles[id];
     }
 
     function changeAssetAddress( address _assetAddress) external onlyOwner {

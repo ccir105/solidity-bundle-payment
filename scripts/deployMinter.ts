@@ -10,7 +10,7 @@ async function main() {
   const testToken = await TestToken.deploy();
   await testToken.deployed();
 
-  const bubbleSale = await BubbleSale.deploy(signers[0].address, testToken.address);
+  const bubbleSale = await BubbleSale.deploy(signers[0].address, testToken.address, "0x70F78c5c7FD95Bfd248121b60eDFeE844292d45B");
   await bubbleSale.deployed();
 
   console.log('Bubble Sale deployed to:', bubbleSale.address);

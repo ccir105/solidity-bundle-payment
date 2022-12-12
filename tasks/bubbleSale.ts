@@ -47,7 +47,7 @@ export default function initTask(task: any) {
         .addParam('address', 'Address of receiver')
         .setAction(async (taskArgs: any, hre: any) => {
             let testToken = await getTestToken(hre);
-            const tx = await testToken.transfer(taskArgs.address, BigInt(10e6))
+            const tx = await testToken.transfer(taskArgs.address, BigInt(1000e6))
             await showTxStatus(tx, hre);
         });
 
@@ -55,12 +55,11 @@ export default function initTask(task: any) {
         .addParam('address', 'Address of receiver')
         .setAction(async (taskArgs: any, hre: any) => {
             const accounts = await hre.ethers.getSigners();
-            let singer = accounts.filter(a => a.address.toLowerCase() === taskArgs.address );
-            if( singer.length === 0 ){
+            let singer = accounts.find(a => a.address.toLowerCase() === taskArgs.address.toLowerCase() );
+            if( !singer ){
                 return
             }
             let bubbleSale = await getBubbleSale(hre);
-            singer = singer[0];
             let testToken = await getTestToken(hre);
             const approveTxs = await testToken.connect(singer).approve(bubbleSale.address, BigInt(1000000e6));
             await showTxStatus(approveTxs, hre, 'approved');
@@ -68,19 +67,32 @@ export default function initTask(task: any) {
 
     task('purchase-bubble', 'Purchase the bubble')
         .addParam('address', 'Address of buyer')
-        .addParam('amount', 'Number of tokens')
+        .addParam('bundle', 'Bundle Id')
         .setAction(async (taskArgs: any, hre: any) => {
             const accounts = await hre.ethers.getSigners();
-            let singer = accounts.filter(a => a.address.toLowerCase() === taskArgs.address );
+            let singer = accounts.filter(a => a.address.toLowerCase() === taskArgs.address.toLowerCase() );
             if( singer.length === 0 ){
                 return
             }
             singer = singer[0];
 
             let bubbleSale = await getBubbleSale(hre);
-            const parsedAmount = hre.ethers.utils.parseUnits( taskArgs.amount, 6 );
 
-            const tx = await bubbleSale.connect(singer).purchaseBubblesByUSD(parsedAmount);
+            const tx = await bubbleSale.connect(singer).purchaseGemsByToken(1);
+            await showTxStatus(tx, hre, 'purchased');
+        });
+
+    task('add-bundle', 'Add New Bundle')
+        .setAction(async (taskArgs: any, hre: any) => {
+            let bubbleSale = await getBubbleSale(hre);
+            const tx = await bubbleSale.saveBundle(1, [
+                BigInt(10e6),
+                0,
+                11,
+                true,
+                "Special",
+                "Special Offers"
+            ]);
             await showTxStatus(tx, hre, 'purchased');
         });
 };
