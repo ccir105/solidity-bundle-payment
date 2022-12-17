@@ -3,7 +3,7 @@ import {ethers, web3} from 'hardhat';
 import {MerkleTree} from 'merkletreejs';
 import fs from 'fs';
 
-describe('MinterProxy', function () {
+describe.skip('MinterProxy', function () {
   this.timeout(100000000);
   let minterProxy;
   let signers;

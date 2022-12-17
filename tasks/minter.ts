@@ -1,3 +1,4 @@
+// @ts-ignore
 import addresses from './address.json';
 import {ethers} from "ethers";
 import fs from "fs";
@@ -5,7 +6,7 @@ import readXlsxFile from "read-excel-file/node";
 import writeXlsxFile from "write-excel-file/node";
 import {MerkleTree} from 'merkletreejs';
 
-export async function showTxStatus(tx: any) {
+async function showTxStatus(tx: any, hre: any) {
   console.log('[Transaction]', tx.hash);
   let receipt = await tx.wait();
   console.log(`[Cost] ${ethers.utils.formatEther(tx.gasPrice * receipt.gasUsed)} ETH`);
