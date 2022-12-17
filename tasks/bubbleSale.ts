@@ -85,14 +85,94 @@ export default function initTask(task: any) {
     task('add-bundle', 'Add New Bundle')
         .setAction(async (taskArgs: any, hre: any) => {
             let bubbleSale = await getBubbleSale(hre);
-            const tx = await bubbleSale.saveBundle(1, [
-                BigInt(10e6),
-                0,
-                11,
-                true,
-                "Special",
-                "Special Offers"
-            ]);
-            await showTxStatus(tx, hre, 'purchased');
+
+                const serverBundles = [{
+                    "expiredAt": null,
+                    "_id": "6391d3b2c8c2f5389bc4f875",
+                    "name": "light pack",
+                    "description": "1usd and get 1gems",
+                    "position": 0,
+                    "isActive": true,
+                    "isPromotion": false,
+                    "price": 1,
+                    "gems": 1,
+                    "bundleId": 139305626
+                },
+                {
+                    "expiredAt": null,
+                    "_id": "6391d3e6c8c2f5389bc4f876",
+                    "name": "medium pack",
+                    "description": "4.99usd and get 6gems",
+                    "position": 1,
+                    "isActive": true,
+                    "isPromotion": false,
+                    "price": 4.99,
+                    "gems": 6,
+                    "bundleId": 715726682
+                },
+                {
+                    "expiredAt": null,
+                    "_id": "6391d43dc8c2f5389bc4f877",
+                    "name": "pre pack",
+                    "description": "19.99usd and get 25gems",
+                    "position": 2,
+                    "isActive": true,
+                    "isPromotion": false,
+                    "price": 19.99,
+                    "gems": 25,
+                    "bundleId": 701594013
+                },
+                {
+                    "expiredAt": null,
+                    "_id": "639ca38b29650c1c0cab7777",
+                    "name": "pro pack",
+                    "description": "49.99usd and get 70gems",
+                    "position": 5,
+                    "isActive": true,
+                    "isPromotion": false,
+                    "price": 49.99,
+                    "gems": 70,
+                    "bundleId": 701894013
+                }]
+
+            for(let i = 0; i < serverBundles.length; i++  ) {
+                let bundle = serverBundles[i];
+                let tx = await bubbleSale.saveBundle(
+                    bundle.bundleId, [
+                        BigInt(bundle.price * 1e6),
+                        0,
+                        bundle.gems,
+                        true,
+                        bundle.name,
+                        bundle.description
+                    ]
+                );
+
+                await showTxStatus(tx, hre, 'bundleAdded');
+            }
+
+
+        });
+
+    task('get-bundels', 'GEt All bundles')
+        .setAction(async (taskArgs: any, hre: any) => {
+            let bubbleSale = await getBubbleSale(hre);
+            console.log(await bubbleSale.getBundles());
+        })
+
+    task('delete-bundles', 'Delete All BUndles')
+        .addParam('bundleId', 'Bundle Id')
+        .setAction(async (taskArgs: any, hre:any) => {
+            let bubbleSale = await getBubbleSale(hre);
+            const tx = await bubbleSale.deleteBundle(taskArgs.bundleId);
+            await showTxStatus(tx, hre, 'bundleAdded');
+        });
+
+    task('get-bundle-info', 'Get BUndle Info')
+        .addParam('bundle', 'Bundle Id')
+        .setAction(async (taskArgs: any, hre:any) => {
+            let bubbleSale = await getBubbleSale(hre);
+            const info = await bubbleSale.getBundle(taskArgs.bundle);
+           console.log(info)
         });
 };

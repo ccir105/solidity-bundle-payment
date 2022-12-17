@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {ethers} from 'hardhat';
 
-describe('Contract Bubbles', function () {
+describe.skip('Contract Bubbles', function () {
   let seller;
   let signers;
   let testToken;
