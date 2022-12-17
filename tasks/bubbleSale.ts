@@ -7,11 +7,11 @@ async function showTxStatus(tx: any, hre: any, tag: any= '') {
 }
 
 async function getBubbleSale(hre) {
-    return await hre.ethers.getContractAt('Bubbles', addresses.bubbleSale);
+    return await hre.ethers.getContractAt('Bubbles', addresses[hre.network.name].bubbleSale);
 }
 
 async function getTestToken(hre) {
-    return await hre.ethers.getContractAt('MyToken', addresses.testToken);
+    return await hre.ethers.getContractAt('MyToken', addresses[hre.network.name].maticUsdc);
 }
 
 export default function initTask(task: any) {
@@ -38,6 +38,7 @@ export default function initTask(task: any) {
     task('test-balance', 'Get the balance of test token')
         .addParam('address', 'Address of owner')
         .setAction(async (taskArgs: any, hre: any) => {
+            if( hre.network.name == 'live' ) return;
             let testToken = await getTestToken(hre);
             const balance = await testToken.balanceOf(taskArgs.address);
             console.log(`Balance`, hre.ethers.utils.formatUnits(balance, 6));
@@ -46,6 +47,7 @@ export default function initTask(task: any) {
     task('transfer-test-token', 'Transfer test token to any address')
         .addParam('address', 'Address of receiver')
         .setAction(async (taskArgs: any, hre: any) => {
+            if( hre.network.name == 'live' ) return;
             let testToken = await getTestToken(hre);
             const tx = await testToken.transfer(taskArgs.address, BigInt(1000e6))
             await showTxStatus(tx, hre);
@@ -54,6 +56,7 @@ export default function initTask(task: any) {
     task('approve-test-token', 'Transfer test token to any address')
         .addParam('address', 'Address of receiver')
         .setAction(async (taskArgs: any, hre: any) => {
+            if( hre.network.name == 'live' ) return;
             const accounts = await hre.ethers.getSigners();
             let singer = accounts.find(a => a.address.toLowerCase() === taskArgs.address.toLowerCase() );
             if( !singer ){
@@ -69,6 +72,7 @@ export default function initTask(task: any) {
         .addParam('address', 'Address of buyer')
         .addParam('bundle', 'Bundle Id')
         .setAction(async (taskArgs: any, hre: any) => {
+            if( hre.network.name == 'live' ) return;
             const accounts = await hre.ethers.getSigners();
             let singer = accounts.filter(a => a.address.toLowerCase() === taskArgs.address.toLowerCase() );
             if( singer.length === 0 ){
@@ -84,6 +88,7 @@ export default function initTask(task: any) {
 
     task('add-bundle', 'Add New Bundle')
         .setAction(async (taskArgs: any, hre: any) => {
+
             let bubbleSale = await getBubbleSale(hre);
 
                 const serverBundles = [{
@@ -135,22 +140,20 @@ export default function initTask(task: any) {
                     "bundleId": 701894013
                 }]
 
-            for(let i = 0; i < serverBundles.length; i++  ) {
-                let bundle = serverBundles[i];
-                let tx = await bubbleSale.saveBundle(
-                    bundle.bundleId, [
-                        BigInt(bundle.price * 1e6),
-                        0,
-                        bundle.gems,
-                        true,
-                        bundle.name,
-                        bundle.description
-                    ]
-                );
+            const ids = serverBundles.map(bundle => BigInt(bundle.bundleId))
+            const bundleData = serverBundles.map(bundle => ([
+                BigInt(bundle.price * 1e6),
+                false,
+                bundle.gems,
+                true,
+                bundle.name,
+                bundle.description,
+                bundle.expiredAt ? bundle.expiredAt : 0
+            ]))
 
-                await showTxStatus(tx, hre, 'bundleAdded');
-            }
+            let tx = await bubbleSale.saveBundles(ids, bundleData);
 
+            await showTxStatus(tx, hre, 'bundleAdded');
 
         });
 

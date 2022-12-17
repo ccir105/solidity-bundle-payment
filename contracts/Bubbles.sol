@@ -8,17 +8,17 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract Bubbles is Pausable, Ownable {
-
     using ECDSA for bytes32;
     using SafeMath for uint256;
 
     struct Bundle {
         uint256 price;
-        uint256 beforeDiscount;
+        bool isPromotion;
         uint256 gems;
         bool isActive;
         string name;
         string description;
+        uint256 expiration;
     }
 
     struct PurchaseInfo {
@@ -39,29 +39,35 @@ contract Bubbles is Pausable, Ownable {
 
     event GemsPurchased(address buyer, uint256 bundleId, uint256 gems);
 
-    constructor(address _multiSigWallet, address _assetAddress, address _manager) {
+    constructor(
+        address _multiSigWallet,
+        address _assetAddress,
+        address _manager
+    ) {
         assetAddress = IERC20(_assetAddress);
         multiSigWallet = _multiSigWallet;
         manager = _manager;
     }
 
-    function saveBundle(
-        uint256 id,
-        Bundle memory _toSaveBundle
-    ) external onlyOwner {
-
-        if( bundles[id].gems == 0 ) {
-            bundleIds.push(id);
+    function saveBundles(uint256[] memory _ids, Bundle[] memory _toSaveBundles) external onlyOwner {
+        require(_ids.length == _toSaveBundles.length);
+        for(uint8 i = 0; i < _toSaveBundles.length; i++ ) {
+            if (bundles[_ids[i]].gems == 0) {
+                bundleIds.push(_ids[i]);
+            }
+            bundles[_ids[i]] = _toSaveBundles[i];
         }
-
-        bundles[id] = _toSaveBundle;
     }
 
-    function deleteBundle(uint256 id) external onlyOwner {
-        delete bundles[id];
+    function updateABundle(uint256 _bundleId, Bundle memory _toSaveBundle ) external onlyOwner {
+        bundles[_bundleId] = _toSaveBundle;
     }
 
-    function changeAssetAddress( address _assetAddress) external onlyOwner {
+    function deleteBundle(uint256 _bundleId) external onlyOwner {
+        bundles[_bundleId].isActive = false;
+    }
+
+    function changeAssetAddress(address _assetAddress) external onlyOwner {
         require(_assetAddress != address(0));
         assetAddress = IERC20(_assetAddress);
     }
@@ -70,10 +76,13 @@ contract Bubbles is Pausable, Ownable {
         manager = _newManager;
     }
 
-    function purchaseGemsByToken( uint256 bundleId ) external whenNotPaused {
-
+    function purchaseGemsByToken(uint256 bundleId) external whenNotPaused {
         Bundle memory _bundle = bundles[bundleId];
-        require(_bundle.isActive == true , "Not Active");
+        require(_bundle.isActive == true, "Not Active");
+
+        if( _bundle.expiration > 0) {
+            require(block.timestamp < _bundle.expiration, "Expired");
+        }
 
         uint256 totalApproved = assetAddress.allowance(msg.sender, address(this));
         require(totalApproved >= _bundle.price, "Not Enough");
@@ -86,17 +95,24 @@ contract Bubbles is Pausable, Ownable {
         emit GemsPurchased(msg.sender, bundleId, _bundle.gems);
     }
 
-    function purchaseGemsByEth(uint256 bundleId, uint256 amountInEth, bytes memory _signature )
-    external payable whenNotPaused {
+    function purchaseGemsByEth(
+        uint256 bundleId,
+        uint256 amountInEth,
+        bytes memory _signature
+    ) external payable whenNotPaused {
+
+        Bundle memory _bundle = bundles[bundleId];
+        require(_bundle.isActive == true, "Not Active");
+
+        if( _bundle.expiration > 0) {
+            require(block.timestamp < _bundle.expiration, "Expired");
+        }
 
         bytes memory _message = abi.encodePacked(bundleId, amountInEth, msg.sender);
         address _recoveredAddress = keccak256(_message).toEthSignedMessageHash().recover(_signature);
 
-        require(manager == _recoveredAddress,"Signature Not Matched");
+        require(manager == _recoveredAddress, "Signature Not Matched");
         require(msg.value >= amountInEth, "Not Enough");
-
-        Bundle memory _bundle = bundles[bundleId];
-        require(_bundle.isActive == true , "Not Active");
 
         payable(multiSigWallet).transfer(address(this).balance);
 
@@ -114,15 +130,15 @@ contract Bubbles is Pausable, Ownable {
         _unpause();
     }
 
-    function getBundle(uint256 bundleId) public view returns(Bundle memory) {
+    function getBundle(uint256 bundleId) public view returns (Bundle memory) {
         return bundles[bundleId];
     }
 
-    function getBundles() public view returns(uint256[] memory) {
+    function getBundles() public view returns (uint256[] memory) {
         return bundleIds;
     }
 
-    function getPurchaseHistory() public view returns(PurchaseInfo[] memory) {
+    function getPurchaseHistory() public view returns (PurchaseInfo[] memory) {
         return purchaseHistory;
     }
 }

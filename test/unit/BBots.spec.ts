@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {ethers} from 'hardhat';
 
-describe.skip('Contract Bubbles', function () {
+describe('Contract Bubbles', function () {
   let seller;
   let signers;
   let testToken;
@@ -22,13 +22,16 @@ describe.skip('Contract Bubbles', function () {
   it('Should add some bundles', async () => {
 
     //id, price, beforeDiscount, gems, isActive, name, description
-    await seller.saveBundle(1, [
-        BigInt(10e6),
-        0,
-        11,
-        true,
-        "Special",
-        "Special Offers"
+    await seller.saveBundles([1], [
+        [
+          BigInt(10e6),
+          false,
+          11,
+          true,
+          "Special",
+          "Special Offers",
+          0
+      ]
     ]);
 
     const theBundle = await seller.getBundle(1);
@@ -71,4 +74,27 @@ describe.skip('Contract Bubbles', function () {
     expect(lastEvent.args[1].toString()).to.be.eq(BigInt(1).toString());
     expect(lastEvent.args[2].toString()).to.be.eq(BigInt(theBundle.gems).toString());
   });
+
+  it('should deactivate bundles', async () => {
+    const bundles = await seller.getBundles();
+    await seller.deleteBundle( bundles[0] );
+    const bundle = await seller.getBundle(bundles[0]);
+    expect(bundle.isActive).to.be.eq(false);
+  });
+
+  it('should update the bundle', async () => {
+    const bundles = await seller.getBundles();
+    await seller.updateABundle( bundles[0], [
+      BigInt(10e6),
+      false,
+      11,
+      true,
+      "Special DK",
+      "Special Offers",
+      0
+    ]);
+
+    const bundle = await seller.getBundle(bundles[0]);
+    expect(bundle.name).to.be.eq("Special DK");
+  })
 });
