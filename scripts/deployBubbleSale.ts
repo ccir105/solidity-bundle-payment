@@ -8,6 +8,7 @@ async function main() {
 
   let maticUsdc = ''; //place the correct address of usdc matic
   let multiSigWallet = '0xa432cE1f3D48ddf003b95F2563238D8e9dd86Dc7';
+  let manager = '0x4d8E66e7035CcAD6B5355Fa5004dcC446342C7B7'; // this can be the signer, if we want to switch payment by matic
 
   const signers = await ethers.getSigners();
   const BubbleSale = await ethers.getContractFactory('Bubbles');
@@ -20,7 +21,7 @@ async function main() {
     multiSigWallet = signers[0].address;
   }
 
-  const bubbleSale = await BubbleSale.deploy(signers[0].address, maticUsdc, multiSigWallet);
+  const bubbleSale = await BubbleSale.deploy(multiSigWallet, maticUsdc, manager);
   console.log("Deployed");
 
   addresses[networkName] = {
