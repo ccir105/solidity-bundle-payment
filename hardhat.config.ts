@@ -32,7 +32,6 @@ const config: HardhatUserConfig | any = {
     localhost: {
       url: 'http://127.0.0.1:8545',
       gasMultiplier: 1,
-      accounts:  [process.env.PRIVATE_KEY],
     },
     hardhat: {
       gas: 25e6,
@@ -40,7 +39,7 @@ const config: HardhatUserConfig | any = {
     live: {
       url: `https://polygon-rpc.com`,
       chainId: 137,
-      accounts:  [process.env.PRIVATE_KEY],
+      accounts: accounts.privateKey,
     },
     mumbai: {
       url: `https://rpc-mumbai.maticvigil.com`,
